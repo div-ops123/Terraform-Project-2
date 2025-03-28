@@ -73,7 +73,7 @@ furniture-store-website/
 - The main project then uses these resources to store its state remotely, with DynamoDB providing state locking to prevent concurrent modifications.
 
 ---
-grok: Step 2: Configure the Main Project
+
 ---
 
 
