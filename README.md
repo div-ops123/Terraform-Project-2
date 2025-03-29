@@ -1,15 +1,32 @@
-### Project Overview: Furniture Store Website on AWS
-**Disclaimer**: Inspired by Author: Ryan Almeida
+### Project Overview: KubeStack Automation
+
+**Disclaimer**: Application code by Author: Ryan Almeida
 📌 GitHub Profile: Ryan Almeida[https://github.com/ryan-almeida]
 
-📌 Medium Article: Learn 12 Terraform Concepts with a Hands-On Project[https://medium.com/@ryanralmeida/learn-12-terraform-concepts-with-a-hands-on-project-b47f04392289]
-
-**Goal**: Provision a sample furniture store website hosted on EC2 instances, fronted by an Application Load Balancer (ALB), managed by an Auto Scaling Group (ASG) with a min of 2 and max of 4 instances, using Terraform modules for networking and compute, and remote state in S3/DynamoDB.
+**Goal**: Provision a scalable, containerized note-taking app on Kubernetes, deployed on EC2 instances using Terraform for infrastructure, Ansible for configuration management, and a CI/CD pipeline (Jenkins + Harness) for automation, using Terraform modules for networking and compute, and remote state in S3/DynamoDB.
 
 **Components**:
-- **Networking**: VPC, subnets, security groups, ALB.
-- **Compute**: EC2 instances, ASG, launch template.
-- **State**: S3 bucket and DynamoDB table for Terraform state.
+- **Infrastructure (Terraform)**:
+  - VPC, subnets, security groups
+  - EC2 instances for Kubernetes nodes
+  - Auto Scaling Group (ASG) for worker nodes
+  - Application Load Balancer (ALB)
+  - S3 bucket and DynamoDB table for Terraform state
+
+- **Configuration Management (Ansible)**:
+  - Kubernetes installation and node setup
+  - Application deployment configurations
+
+- **Orchestration (Kubernetes)**:
+  - Node.js app running as a containerized service
+  - Ingress controller for routing
+
+- **CI/CD (Jenkins + Harness)**:
+  - Jenkins pipeline for building and testing
+  - Harness for automated deployments
+
+- **State**: 
+  - S3 bucket and DynamoDB table for Terraform state.
 
 ---
 
@@ -17,25 +34,43 @@
 Following best practices:
 
 ```
-furniture-store-website/
-├── main.tf              # Root module: Calls networking and compute modules
-├── variables.tf         # Root-level input variables
-├── outputs.tf           # Root-level outputs (e.g., ALB DNS name)
-├── provider.tf          # AWS provider configuration
-├── versions.tf          # Terraform and provider version constraints
-├── terraform.tfvars     # Variable values for convenience (optional, non-sensitive)
-├── .gitignore           # Ignore transient files
-├── bootstrap/           # Directory to provision the remote state resources
-│   ├── main.tf          # Create the S3 bucket and DynamoDB table
-├── modules/
-│   ├── networking/      # Module for VPC, subnets, ALB, etc.
-│   │   ├── main.tf
-│   │   ├── variables.tf
-│   │   ├── outputs.tf
-│   └── compute/         # Module for EC2, ASG, launch template
-│       ├── main.tf
-│       ├── variables.tf
-│       ├── outputs.tf
+./
+├── application-code/          # Node.js note-app source code
+│   ├── src/                  # App source files (e.g., server.js)
+│   ├── package.json          # Node.js dependencies and scripts
+│   ├── Dockerfile            # Docker image definition for the app
+│   └── .dockerignore         # Ignore files for Docker build
+├── terraform/                # Terraform infra code
+│   ├── main.tf               # Root module: Calls networking and compute modules
+│   ├── variables.tf          # Root-level variables
+│   ├── outputs.tf            # Root-level outputs (e.g., cluster IPs)
+│   ├── provider.tf           # AWS provider config
+│   ├── versions.tf           # Terraform and provider versions, S3 backend
+│   └── modules/
+│       ├── networking/       # VPC, subnets, IGW, etc.
+│       │   ├── main.tf
+│       │   ├── variables.tf
+│       │   └── outputs.tf
+│       └── compute/          # EC2 instances for Kubernetes nodes
+│           ├── main.tf
+│           ├── variables.tf
+│           └── outputs.tf
+├── ansible/                  # Ansible config for Kubernetes setup
+│   ├── inventory.yml         # List of EC2 instances (dynamically populated)
+│   ├── playbooks/
+│   │   ├── install-k8s.yml   # Install Kubernetes (kubeadm, Docker, etc.)
+│   │   └── configure-cluster.yml  # Join nodes to the cluster
+│   └── roles/                # Reusable Ansible roles (optional)
+│       ├── kubernetes/
+│       │   ├── tasks/
+│       │   ├── templates/
+│       │   └── vars/
+├── kubernetes/               # Kubernetes manifests for the note-app
+│   ├── deployment.yml        # Deployment for the Node.js app
+│   ├── service.yml           # Service to expose the app (e.g., LoadBalancer)
+│   └── configmap.yml         # Optional: Config for the app (if needed)
+├── .gitignore                # Ignore transient files
+└── README.md                 # Project overview and setup instructions
 ```
 
 #### Prerequisites
@@ -44,7 +79,7 @@ furniture-store-website/
 
 #### Deployment Guide
 
-## 1. Configuring Remote State Management with S3 and DynamoDB
+## A. Configuring Remote State Management with S3 and DynamoDB
 
 **Run the Bootstrap**:
 1. Navigate to the `bootstrap/` directory:
@@ -72,27 +107,58 @@ furniture-store-website/
 - The bootstrap step creates the S3 bucket and DynamoDB table independently.
 - The main project then uses these resources to store its state remotely, with DynamoDB providing state locking to prevent concurrent modifications.
 
+
+## B. 
+
+`application-code/`
+- Test locally: `docker build -t note-app . && docker run -p 3000:3000 note-app`.
+
+
+`terraform/`
+- It can assign static private IPs to avoid changes when restarting.
+🔹 If you stop & start VMs, the IPs remain the same, and the cluster continues to work.
+- Output public IPs for Ansible inventory.
+
+
+`ansible/`
+- Use Ansible roles for modularity (e.g., `kubernetes` role).
+- Test playbook locally first with a single VM if possible.
+
+
+`kubernetes/`
+- Use `kubectl apply -f kubernetes/` to deploy manually first.
+
+
+CI/CD (Jenkins + Harness)
+- **CI (Jenkins)**:
+  - **Pipeline**: `Jenkinsfile` to `npm test`, `docker build`, `docker push` to a registry (e.g., Docker Hub).
+- **CD (Harness)**:
+
+  - **Setup**: Install Jenkins on a separate EC2 or locally.
+  - Start with manual `kubectl` deployment, then automate with Jenkins/Harness.
+
 ---
-dd
+
+### Next Steps
+- **Start Small**: Focus on `terraform/` first—update `compute` module for EC2 instances.
+- **Then**: Move to `ansible/` for Kubernetes setup.
+- **Later**: Tackle `kubernetes/` and CI/CD.
+
 ---
 
-
-### My Workflow
-1. **Bootstrap Remote State**:
-   - Manually create an S3 bucket (e.g., `furniture-store-tf-state`) and DynamoDB table (e.g., `tf-locks`).
-   - Add the backend config in `versions.tf`.
-
-2. **Build Networking Module**:
-   - Start with the VPC and subnets, test with `terraform apply`, then add ALB.
-
-3. **Build Compute Module**:
-   - Create the launch template and ASG, connect to the ALB target group.
-
-4. **Tie It Together**:
-   - Call both modules in `main.tf`, pass outputs from networking to compute.
-
-5. **Test**:
-   - Run `terraform plan` to preview, then `terraform apply`.
-   - Access the ALB DNS name to see your website.
+### Workflow Steps
+1. **Terraform**:
+   - Provision VPC, subnets, and 3 EC2 instances (1 master, 2 workers).
+   - Output IPs for Ansible.
+2. **Ansible**:
+   - Run `install-k8s.yml` to install Kubernetes.
+   - Run `configure-cluster.yml` to set up the cluster.
+3. **CI (Jenkins)**:
+   - Build Docker image from `application-code/`.
+   - Push to a registry.
+4. **Kubernetes**:
+   - Deploy the image manually with `kubectl` to test.
+5. **CD (Harness)**:
+   - Automate deployment to Kubernetes.
 
 ---
