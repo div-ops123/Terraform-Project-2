@@ -46,6 +46,8 @@ Following best practices:
 │   ├── outputs.tf            # Root-level outputs (e.g., cluster IPs)
 │   ├── provider.tf           # AWS provider config
 │   ├── versions.tf           # Terraform and provider versions, S3 backend
+│   ├── bootstrap/            # Bootstrap module for remote state management
+│   │   ├── main.tf           # Manages S3 backend and DynamoDB for state locking
 │   └── modules/
 │       ├── networking/       # VPC, subnets, IGW, etc.
 │       │   ├── main.tf
@@ -141,6 +143,7 @@ CI/CD (Jenkins + Harness)
 
 ### Next Steps
 - **Start Small**: Focus on `terraform/` first—update `compute` module for EC2 instances.
+modules/networking/main.tf
 - **Then**: Move to `ansible/` for Kubernetes setup.
 - **Later**: Tackle `kubernetes/` and CI/CD.
 
